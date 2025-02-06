@@ -1,0 +1,6 @@
+2025/02/05-23:08:56.196 2e03 Reusing MANIFEST /Users/faizankhan/Documents/AiScraper/server/userdata/Default/Local Storage/leveldb/MANIFEST-000001
+2025/02/05-23:08:56.206 2e03 Recovering log #59
+2025/02/05-23:08:56.208 2e03 Reusing old log /Users/faizankhan/Documents/AiScraper/server/userdata/Default/Local Storage/leveldb/000059.log 
+2025/02/05-23:09:32.048 2f03 Level-0 table #64: started
+2025/02/05-23:09:32.061 2f03 Level-0 table #64: 18766 bytes OK
+2025/02/05-23:09:32.093 2f03 Delete type=0 #59

@@ -1,0 +1,15 @@
+2025/01/18-00:32:33.294 b403 Reusing MANIFEST /Users/eatring/Documents/AiScraper/server/userdata/Default/IndexedDB/https_www.youtube.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/01/18-00:32:33.295 b403 Recovering log #158
+2025/01/18-00:32:33.296 b403 Reusing old log /Users/eatring/Documents/AiScraper/server/userdata/Default/IndexedDB/https_www.youtube.com_0.indexeddb.leveldb/000158.log 
+2025/01/18-00:32:33.296 b403 Delete type=2 #157
+2025/01/18-00:32:33.416 8803 Level-0 table #163: started
+2025/01/18-00:32:33.428 8803 Level-0 table #163: 28451 bytes OK
+2025/01/18-00:32:33.452 8803 Delete type=0 #158
+2025/01/18-00:32:33.452 a203 Manual compaction at level-0 from '\x00;\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00<\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/01/18-00:32:33.452 a203 Manual compaction at level-1 from '\x00;\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00<\x00\x00\x00' @ 0 : 0; will stop at '\x00=\x00\x00\xc8\x11\x00L\x00o\x00g\x00s\x00R\x00e\x00q\x00u\x00e\x00s\x00t\x00s\x00S\x00t\x00o\x00r\x00e' @ 9311 : 1
+2025/01/18-00:32:33.453 a203 Compacting 1@1 + 1@2 files
+2025/01/18-00:32:33.466 a203 Generated table #164@1: 142 keys, 5269 bytes
+2025/01/18-00:32:33.466 a203 Compacted 1@1 + 1@2 files => 5269 bytes
+2025/01/18-00:32:33.501 a203 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/01/18-00:32:33.502 a203 Delete type=2 #163
+2025/01/18-00:32:33.502 a203 Manual compaction at level-1 from '\x00=\x00\x00\xc8\x11\x00L\x00o\x00g\x00s\x00R\x00e\x00q\x00u\x00e\x00s\x00t\x00s\x00S\x00t\x00o\x00r\x00e' @ 9311 : 1 .. '\x00<\x00\x00\x00' @ 0 : 0; will stop at (end)
