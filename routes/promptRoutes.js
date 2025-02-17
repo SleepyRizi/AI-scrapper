@@ -14,10 +14,28 @@ import Activity from '../models/Activity.js';
 
 // Your AutoGPT action function
 import { doActionWithAutoGPT } from '../autogpt/index.js';
+
 // Utility for logging screenshots
 import { logPageScreenshot } from '../util/index.js';
 
+// Google autocomplete helper
+import { getGoogleSuggestions } from '../util/googleAutocomplete.js';
+
 const router = express.Router();
+
+// Optional helper to remove TLD (e.g. ".com") if you want
+// If you prefer to pass the domain with TLD to getGoogleSuggestions,
+// you can skip this function or adjust how you call it.
+function stripTLD(domain) {
+  // Remove leading "www."
+  let cleaned = domain.replace(/^www\./i, '');
+  // Remove final dot segment
+  const lastDotIndex = cleaned.lastIndexOf('.');
+  if (lastDotIndex > 0) {
+    cleaned = cleaned.substring(0, lastDotIndex);
+  }
+  return cleaned;
+}
 
 // Helper function to log activity
 async function logActivity(userEmail, message, status = 'Success') {
@@ -113,7 +131,8 @@ router.get('/run', async (req, res) => {
           `Error fetching data for ${competitorDomain}: ${err.message}`,
           'Failed'
         );
-        // If we want to continue loop despite error, just log; otherwise you can break/return.
+        // Continue loop if we want to skip on error
+        continue;
       }
 
       // (B) Build competitorEntry
@@ -182,23 +201,56 @@ router.get('/run', async (req, res) => {
               countryCode: shareObj.CountryCode,
               countryName: matched ? matched.Name : 'Unknown',
               share: shareObj.Value,
+              // We'll add "suggestions" array below
             };
           });
         }
       }
 
-      // (C) Push into adminUser and save
+      // (B.1) For each topCountry, get Google suggestions and store them in `ctry.suggestions`
+      if (competitorEntry.topCountries.length > 0) {
+        // OPTIONAL: remove TLD from domain
+        const domainWithoutTld = stripTLD(competitorDomain);
+
+        for (const ctry of competitorEntry.topCountries) {
+          try {
+            await logActivity(
+              email,
+              `Fetching Google Autocomplete for "${domainWithoutTld}" (country: ${ctry.countryCode})`
+            );
+            // e.g. pass `domainWithoutTld`, or if you prefer the full domain, use competitorDomain
+            const suggestions = await getGoogleSuggestions(domainWithoutTld, ctry.countryCode);
+
+            // Attach suggestions to the same ctry object
+            ctry.suggestions = suggestions;
+
+            await logActivity(
+              email,
+              `Fetched ${suggestions.length} suggestions for ${domainWithoutTld} / ${ctry.countryCode}`
+            );
+          } catch (err) {
+            await logActivity(
+              email,
+              `Error getting suggestions for ${domainWithoutTld} (${ctry.countryCode}): ${err.message}`,
+              'Failed'
+            );
+          }
+        }
+      }
+
+      // (C) Push competitorEntry into adminUser, then save
       adminUser.competitorResults.push(competitorEntry);
       await adminUser.save();
       await logActivity(email, `Data saved for: ${competitorDomain}`, 'Success');
 
-      // Now let's reference the newly added competitor subdocument
+      // Reference newly added competitor subdocument
       const addedIndex = adminUser.competitorResults.length - 1;
       const competitorSubDoc = adminUser.competitorResults[addedIndex];
 
       // (D) Run prompts
       for (const promptDoc of prompts) {
         await logActivity(email, `Executing Task: "${promptDoc.name}" for ${competitorDomain}`);
+        // Replace placeholder
         const updatedCommand = promptDoc.command.replace('{{cream-deluxe.com}}', competitorDomain);
 
         let autoGPTResult = null;
@@ -216,7 +268,7 @@ router.get('/run', async (req, res) => {
           );
         }
 
-        // Screenshot (optional)
+        // (Optional) Screenshot
         await logPageScreenshot(page, `${promptDoc.name}-${competitorDomain}-screenshot.png`);
         await logActivity(
           email,

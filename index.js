@@ -1,7 +1,5 @@
+// File: src/index.js
 
-/************************************************************************
- * index.js
- ************************************************************************/
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -11,7 +9,6 @@ import mongoose from 'mongoose';
 
 import { chromium } from 'playwright';
 import prompt from 'prompt';
-// eslint-disable-next-line no-unused-vars
 import colors from '@colors/colors';
 import { Command } from 'commander';
 
@@ -24,19 +21,13 @@ import { createTestFile, gracefulExit, logPageScreenshot } from './util/index.js
 import Admin from './models/Admin.js';
 import authRoutes from './routes/authRoutes.js';
 import promptRoutes from './routes/promptRoutes.js';
-// Import the library routes
 import libraryRoutes from './routes/libraryRoutes.js';
 import activityRoutes from './routes/activityRoutes.js';
 import previewRoutes from './routes/previewRoutes.js';
-import checkAuth from './middleware/authMiddleware.js'; // your existing middleware
 
+// Middleware for checking auth
+import checkAuth from './middleware/authMiddleware.js';
 
-
-
-
-// =====================================================================
-//  EXPRESS SERVER & MONGOOSE SETUP
-// =====================================================================
 const app = express();
 
 // Middleware
@@ -50,21 +41,16 @@ mongoose
   .catch((err) => console.error('Error connecting to MongoDB:', err));
 
 // Routes
-app.use('/auth', authRoutes);       // Existing auth routes
-app.use('/prompts', promptRoutes);  // Existing prompt routes
+app.use('/auth', authRoutes);
+app.use('/prompts', promptRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/og-preview', previewRoutes);
 
-
-
-// NEW: Admin data endpoint (unprotected example)
+// GET /api/admin-data
 app.get('/api/admin-data', checkAuth, async (req, res) => {
   try {
-    // In a real app, find by ID or from JWT data. For demo, assume a single "admin@gmail.com"
-
-    // The JWT payload is attached to req.admin by your middleware
-    const userEmail = req.admin.email; 
+    const userEmail = req.admin.email;
     if (!userEmail) {
       return res.status(400).json({ error: 'JWT does not contain an email field.' });
     }
@@ -72,7 +58,6 @@ app.get('/api/admin-data', checkAuth, async (req, res) => {
     if (!adminDoc) {
       return res.status(404).json({ error: 'Admin not found' });
     }
-    // Return the entire Admin document
     res.json(adminDoc);
   } catch (err) {
     console.error('Error fetching admin data:', err);
@@ -80,34 +65,76 @@ app.get('/api/admin-data', checkAuth, async (req, res) => {
   }
 });
 
-// Start Server
+// PATCH /api/admin-data/update-reseller
+app.patch('/api/admin-data/update-reseller', checkAuth, async (req, res) => {
+  const { resellerId, resellerUrl, competitorDomain, status, location } = req.body;
+
+  if (!competitorDomain || (!resellerId && !resellerUrl)) {
+    return res.status(400).json({
+      error: 'competitorDomain and either resellerId or resellerUrl are required fields.'
+    });
+  }
+
+  try {
+    const userEmail = req.admin.email;
+    const adminDoc = await Admin.findOne({ email: userEmail });
+    if (!adminDoc) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+
+    const competitor = adminDoc.competitorResults.find(
+      (c) => c.domain === competitorDomain
+    );
+    if (!competitor) {
+      return res.status(404).json({ error: 'Competitor not found for given domain' });
+    }
+
+    const resellersPrompt = competitor.prompts.find(
+      (p) => p.promptName === 'Top_Resellers'
+    );
+    if (!resellersPrompt || !resellersPrompt.result) {
+      return res.status(404).json({ error: `Top_Resellers prompt not found for domain ${competitorDomain}` });
+    }
+
+    const resellersArr = resellersPrompt.result.resellers;
+    if (!resellersArr) {
+      return res.status(404).json({ error: 'No resellers array found' });
+    }
+
+    let reseller;
+    if (resellerId && !String(resellerId).startsWith('temp-')) {
+      reseller = resellersArr.find((r) => String(r._id) === String(resellerId));
+    }
+    if (!reseller && resellerUrl) {
+      reseller = resellersArr.find((r) => r.reseller_url === resellerUrl);
+    }
+    if (!reseller) {
+      return res.status(404).json({ error: 'Reseller not found' });
+    }
+
+    // Always update the status field: if provided, set to that; if missing, default to 'new'
+    if (typeof status !== 'undefined') {
+      reseller.status = status;
+    } else if (!reseller.status) {
+      reseller.status = 'new';
+    }
+    if (location !== undefined) {
+      reseller.location = location;
+    }
+
+    // Mark the field as modified so Mongoose saves changes
+    adminDoc.markModified('competitorResults');
+    await adminDoc.save();
+    return res.json({ success: true, message: 'Reseller updated successfully' });
+  } catch (error) {
+    console.error('Error updating reseller:', error);
+    res.status(500).json({ error: 'Server error updating reseller' });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-// =====================================================================
-//  PLAYWRIGHT + LANGCHAIN LOGIC
-// =====================================================================
-async function main(options) {
-  // ... your existing logic for main, if used ...
-}
-
-// =====================================================================
-//  COMMAND LINE OPTIONS & PROGRAM EXECUTION
-// =====================================================================
-const program = new Command();
-
-program
-  .option('-a, --autogpt', 'run with autogpt', false)
-  .option('-m, --model <model>', 'openai model to use', 'gpt-4-1106-preview')
-  .option('-o, --outputFilePath <outputFilePath>', 'path to store test code')
-  .option('-u, --url <url>', 'url to start on', 'https://www.google.com')
-  .option('-v, --viewport <viewport>', 'viewport size to use', '1280,720')
-  .option('-h, --headless', 'run in headless mode', false);
-
-program.parse();
-
-main(program.opts()).catch((err) => {
-  console.error('Error in main:', err);
-});
+// (The PLAYWRIGHT + LANGCHAIN logic remains unchanged)

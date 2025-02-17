@@ -1,18 +1,5 @@
-2025/01/18-00:20:18.553 3d03 Reusing MANIFEST /Users/eatring/Documents/AiScraper/server/userdata/Default/Local Storage/leveldb/MANIFEST-000001
-2025/01/18-00:20:18.563 3d03 Recovering log #54
-2025/01/18-00:20:18.564 3d03 Reusing old log /Users/eatring/Documents/AiScraper/server/userdata/Default/Local Storage/leveldb/000054.log 
-2025/01/18-00:20:37.613 3703 Level-0 table #58: started
-2025/01/18-00:20:37.627 3703 Level-0 table #58: 22653 bytes OK
-2025/01/18-00:20:37.655 3703 Delete type=0 #54
-2025/01/18-00:27:55.473 3703 Level-0 table #60: started
-2025/01/18-00:27:55.491 3703 Level-0 table #60: 22067 bytes OK
-2025/01/18-00:27:55.518 3703 Delete type=0 #57
-2025/01/18-00:27:55.519 3703 Compacting 4@0 + 1@1 files
-2025/01/18-00:27:55.543 3703 Generated table #61@0: 771 keys, 309651 bytes
-2025/01/18-00:27:55.543 3703 Compacted 4@0 + 1@1 files => 309651 bytes
-2025/01/18-00:27:55.576 3703 compacted to: files[ 0 1 1 0 0 0 0 ]
-2025/01/18-00:27:55.578 3703 Delete type=2 #60
-2025/01/18-00:27:55.578 3703 Delete type=2 #58
-2025/01/18-00:27:55.578 3703 Delete type=2 #55
-2025/01/18-00:27:55.578 3703 Delete type=2 #51
-2025/01/18-00:27:55.578 3703 Delete type=2 #53
+2025/02/15-02:28:06.404 3bfc Reusing MANIFEST D:\FiverrWork\AI_ScraperV2\Server\userdata\Default\Local Storage\leveldb/MANIFEST-000001
+2025/02/15-02:28:06.418 3bfc Recovering log #63
+2025/02/15-02:28:06.421 3bfc Reusing old log D:\FiverrWork\AI_ScraperV2\Server\userdata\Default\Local Storage\leveldb/000063.log 
+2025/02/15-02:28:54.795 24d0 Level-0 table #67: started
+2025/02/15-02:28:54.881 24d0 Level-0 table #67: 18090 bytes OK

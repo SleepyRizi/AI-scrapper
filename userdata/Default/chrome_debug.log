@@ -1,0 +1,50 @@
+[0215/023047.821:INFO:CONSOLE(2)] "JQMIGRATE: Migrate is installed, version 3.4.1", source: https://cream-deluxe.com/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.1 (2)
+[0215/023048.010:INFO:CONSOLE(1419)] "Access to font at 'https://cdn-5e669324f911c80ca0fd9499.closte.com/wp-content/uploads/useanyfont/200603025523Arpona-Light.woff2' from origin 'https://cream-deluxe.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.", source: https://cream-deluxe.com/ (1419)
+[0215/023048.132:INFO:CONSOLE(93)] "null", source: https://cream-deluxe.com/wp-content/themes/hello-elementor/assets/js/custom-js-jaaqob.js?ver=22.10.10 (93)
+[0215/023048.138:INFO:CONSOLE(153)] "null", source: https://cream-deluxe.com/wp-content/themes/hello-elementor/assets/js/custom-js-jaaqob.js?ver=22.10.10 (153)
+[0215/023048.138:INFO:CONSOLE(156)] "false", source: https://cream-deluxe.com/wp-content/themes/hello-elementor/assets/js/custom-js-jaaqob.js?ver=22.10.10 (156)
+[0215/023048.425:INFO:CONSOLE(3)] "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/133.0.6943.16 Safari/537.36", source: https://static.hotjar.com/c/hotjar-1753314.js?sv=7 (3)
+[0215/023049.686:INFO:CONSOLE(1)] "Uncaught (in promise) Not Found", source: https://cdn.convertbox.com//convertbox/js/embed-core.js?id=7d8697148a72433d3d61 (1)
+[0215/023056.524:INFO:CONSOLE(0)] "The resource https://fonts.gstatic.com/s/opensans/v18/mem8YaGs126MiZpBA-UFVZ0bf8pkAg.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://cream-deluxe.com/ (0)
+[0215/023056.525:INFO:CONSOLE(0)] "The resource https://cdn-5e669324f911c80ca0fd9499.closte.com/wp-content/uploads/useanyfont/200603025523Arpona-Light.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://cream-deluxe.com/ (0)
+[0215/023056.525:INFO:CONSOLE(0)] "The resource https://fonts.gstatic.com/s/roboto/v20/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://cream-deluxe.com/ (0)
+[0215/023056.525:INFO:CONSOLE(0)] "The resource https://cream-deluxe.com/wp-content/plugins/elementor/assets/lib/eicons/fonts/eicons.woff2?5.7.0 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source: https://cream-deluxe.com/ (0)
+[0215/023104.630:INFO:CONSOLE(239)] "
+%cرکیں! font-family:helvetica; font-size:20px; font-size:50px; font-weight:bold; color:red; -webkit-text-stroke:1px black;", source: https://static.xx.fbcdn.net/rsrc.php/v4/yI/r/IfUoMvpUr4C.js (239)
+[0215/023104.630:INFO:CONSOLE(239)] "
+%cبراؤزر میں دستیاب یہ فیچر ڈویلپرز کیلئے ہے۔ اگر کوئی شخص کسی Facebook فیچر کو فعال کرنے یا کسی شخص کا اکاؤنٹ ہیک کرنے کیلئے آپ سے یہاں کچھ کاپی پیسٹ کرنے کو کہتا ہے تو یہ دھوکہ بازی ہے اور اس کے نتیجے میں اس شخص کو آپ کے Facebook اکاؤنٹ تک رسائی حاصل ہو جائے گی۔ font-family:helvetica; font-size:20px; ", source: https://static.xx.fbcdn.net/rsrc.php/v4/yI/r/IfUoMvpUr4C.js (239)
+[0215/023104.630:INFO:CONSOLE(239)] "
+%cمزید معلومات کیلئے https://www.facebook.com/selfxss دیکھیں۔ font-family:helvetica; font-size:20px; ", source: https://static.xx.fbcdn.net/rsrc.php/v4/yI/r/IfUoMvpUr4C.js (239)
+[0215/023104.630:INFO:CONSOLE(239)] "
+%c ", source: https://static.xx.fbcdn.net/rsrc.php/v4/yI/r/IfUoMvpUr4C.js (239)
+[0215/023104.656:INFO:CONSOLE(0)] "[GroupMarkerNotSet(crbug.com/242999)!:A0A06400AC2E0000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.", source: https://www.facebook.com/creamdeluxeuae (0)
+[0215/023117.471:INFO:CONSOLE(239)] "
+%cStop! font-family:helvetica; font-size:20px; font-size:50px; font-weight:bold; color:red; -webkit-text-stroke:1px black;", source: https://static.cdninstagram.com/rsrc.php/v4/yI/r/IfUoMvpUr4C.js (239)
+[0215/023117.471:INFO:CONSOLE(239)] "
+%cThis is a browser feature intended for developers. If someone told you to copy-paste something here to enable an Instagram feature or "hack" someone's account, it is a scam and will give them access to your Instagram account. font-family:helvetica; font-size:20px; ", source: https://static.cdninstagram.com/rsrc.php/v4/yI/r/IfUoMvpUr4C.js (239)
+[0215/023117.471:INFO:CONSOLE(239)] "
+%cSee https://www.facebook.com/selfxss for more information. font-family:helvetica; font-size:20px; ", source: https://static.cdninstagram.com/rsrc.php/v4/yI/r/IfUoMvpUr4C.js (239)
+[0215/023117.471:INFO:CONSOLE(239)] "
+%c ", source: https://static.cdninstagram.com/rsrc.php/v4/yI/r/IfUoMvpUr4C.js (239)
+[0215/023117.472:INFO:CONSOLE(0)] "[GroupMarkerNotSet(crbug.com/242999)!:A0A06400AC2E0000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.", source: https://www.instagram.com/creamdeluxeofficial/ (0)
+[0215/023118.856:INFO:CONSOLE(71)] "ErrorUtils caught an error:
+
+Please wait a few minutes before you try again. [Caught in: caught error in module a [from CometTransientDialogProvider.react] (base)]
+
+Subsequent non-fatal errors won't be logged; see https://fburl.com/debugjs.", source: https://static.cdninstagram.com/rsrc.php/v4/yI/r/IfUoMvpUr4C.js (71)
+[0215/023120.131:INFO:CONSOLE(239)] "
+%cStop! font-family:helvetica; font-size:20px; font-size:50px; font-weight:bold; color:red; -webkit-text-stroke:1px black;", source: https://static.cdninstagram.com/rsrc.php/v4/yI/r/IfUoMvpUr4C.js (239)
+[0215/023120.132:INFO:CONSOLE(239)] "
+%cThis is a browser feature intended for developers. If someone told you to copy-paste something here to enable an Instagram feature or "hack" someone's account, it is a scam and will give them access to your Instagram account. font-family:helvetica; font-size:20px; ", source: https://static.cdninstagram.com/rsrc.php/v4/yI/r/IfUoMvpUr4C.js (239)
+[0215/023120.132:INFO:CONSOLE(239)] "
+%cSee https://www.facebook.com/selfxss for more information. font-family:helvetica; font-size:20px; ", source: https://static.cdninstagram.com/rsrc.php/v4/yI/r/IfUoMvpUr4C.js (239)
+[0215/023120.136:INFO:CONSOLE(239)] "
+%c ", source: https://static.cdninstagram.com/rsrc.php/v4/yI/r/IfUoMvpUr4C.js (239)
+[0215/023120.151:INFO:CONSOLE(0)] "[GroupMarkerNotSet(crbug.com/242999)!:A0A06400AC2E0000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content.", source: https://www.instagram.com/accounts/login/?next=%2Fcreamdeluxeofficial%2F&source=omni_redirect (0)
+[0215/023130.445:INFO:CONSOLE(2)] "JQMIGRATE: Migrate is installed, version 3.4.1", source: https://cream-deluxe.com/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.1 (2)
+[0215/023130.534:INFO:CONSOLE(1092)] "Access to font at 'https://cdn-5e669324f911c80ca0fd9499.closte.com/wp-content/uploads/useanyfont/200603025523Arpona-Light.woff2' from origin 'https://cream-deluxe.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.", source: https://cream-deluxe.com/ (1092)
+[0215/023130.741:INFO:CONSOLE(93)] "null", source: https://cream-deluxe.com/wp-content/themes/hello-elementor/assets/js/custom-js-jaaqob.js?ver=22.10.10 (93)
+[0215/023130.746:INFO:CONSOLE(153)] "null", source: https://cream-deluxe.com/wp-content/themes/hello-elementor/assets/js/custom-js-jaaqob.js?ver=22.10.10 (153)
+[0215/023130.746:INFO:CONSOLE(156)] "false", source: https://cream-deluxe.com/wp-content/themes/hello-elementor/assets/js/custom-js-jaaqob.js?ver=22.10.10 (156)
+[0215/023130.799:INFO:CONSOLE(3)] "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/133.0.6943.16 Safari/537.36", source: https://static.hotjar.com/c/hotjar-1753314.js?sv=7 (3)
+[0215/023131.460:INFO:CONSOLE(1)] "Uncaught (in promise) Not Found", source: https://cdn.convertbox.com//convertbox/js/embed-core.js?id=7d8697148a72433d3d61 (1)
