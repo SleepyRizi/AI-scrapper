@@ -1,3 +1,7 @@
-2025/01/16-23:14:03.500 6b03 Creating DB /Users/eatring/Documents/AiScraper/server/userdata/Default/IndexedDB/https_www.ebay.com_0.indexeddb.leveldb since it was missing.
-2025/01/16-23:14:03.540 6b03 Reusing MANIFEST /Users/eatring/Documents/AiScraper/server/userdata/Default/IndexedDB/https_www.ebay.com_0.indexeddb.leveldb/MANIFEST-000001
-2025/01/16-23:14:03.629 8c03 Manual compaction at level-0 from '\x00\x02\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x03\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/02/20-11:44:11.405 5a8 Reusing MANIFEST D:\FiverrWork\AI_ScraperV2\Server\userdata\Default\IndexedDB\https_www.ebay.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/02/20-11:44:11.405 5a8 Recovering log #6
+2025/02/20-11:44:11.406 5a8 Reusing old log D:\FiverrWork\AI_ScraperV2\Server\userdata\Default\IndexedDB\https_www.ebay.com_0.indexeddb.leveldb/000006.log 
+2025/02/20-11:44:11.755 1270 Level-0 table #11: started
+2025/02/20-11:44:11.811 1270 Level-0 table #11: 479 bytes OK
+2025/02/20-11:44:11.911 1270 Delete type=0 #6
+2025/02/20-11:44:11.911 5a8 Manual compaction at level-0 from '\x00\x04\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x05\x00\x00\x00' @ 0 : 0; will stop at (end)

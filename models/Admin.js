@@ -41,11 +41,20 @@ const competitorResultSchema = new mongoose.Schema({
   ],
 });
 
+// ***** IMPORTANT: Make competitorResults an array-of-arrays of competitorResultSchema *****
 const adminSchema = new mongoose.Schema(
   {
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    competitorResults: [competitorResultSchema],
+
+    // Each time you run the /run endpoint, it will create
+    // a *new array* of competitorResults and push it to this outer array.
+    competitorResults: {
+      type: [[competitorResultSchema]],
+      default: [],
+    },
+    // NEW FIELD:
+    notificationEmail: { type: String, default: '' },
   },
   { timestamps: true }
 );

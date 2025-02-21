@@ -1,0 +1,19 @@
+2025/02/20-11:43:55.886 5a8 Reusing MANIFEST D:\FiverrWork\AI_ScraperV2\Server\userdata\Default\IndexedDB\https_www.ebay.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/02/20-11:43:55.895 5a8 Recovering log #3
+2025/02/20-11:43:55.895 5a8 Reusing old log D:\FiverrWork\AI_ScraperV2\Server\userdata\Default\IndexedDB\https_www.ebay.com_0.indexeddb.leveldb/000003.log 
+2025/02/20-11:43:56.018 1270 Level-0 table #5: started
+2025/02/20-11:43:56.107 1270 Level-0 table #5: 1866 bytes OK
+2025/02/20-11:43:56.157 1270 Delete type=0 #3
+2025/02/20-11:43:56.157 5a8 Manual compaction at level-0 from '\x00\x03\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x04\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/02/20-11:44:09.415 5a8 Level-0 table #7: started
+2025/02/20-11:44:09.461 5a8 Level-0 table #7: 242 bytes OK
+2025/02/20-11:44:09.518 5a8 Delete type=0 #4
+2025/02/20-11:44:09.518 5a8 Manual compaction at level-0 from (begin) .. (end); will stop at (end)
+2025/02/20-11:44:09.519 5a8 Manual compaction at level-1 from (begin) .. (end); will stop at '\x00\x00\x00\x002\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00' @ 123 : 0
+2025/02/20-11:44:09.519 5a8 Compacting 1@1 + 1@2 files
+2025/02/20-11:44:09.580 5a8 Generated table #8@1: 31 keys, 767 bytes
+2025/02/20-11:44:09.581 5a8 Compacted 1@1 + 1@2 files => 767 bytes
+2025/02/20-11:44:09.654 5a8 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/02/20-11:44:09.658 5a8 Delete type=2 #5
+2025/02/20-11:44:09.658 5a8 Delete type=2 #7
+2025/02/20-11:44:09.658 5a8 Manual compaction at level-1 from '\x00\x00\x00\x002\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00' @ 123 : 0 .. (end); will stop at (end)

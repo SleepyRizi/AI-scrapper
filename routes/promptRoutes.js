@@ -23,9 +23,7 @@ import { getGoogleSuggestions } from '../util/googleAutocomplete.js';
 
 const router = express.Router();
 
-// Optional helper to remove TLD (e.g. ".com") if you want
-// If you prefer to pass the domain with TLD to getGoogleSuggestions,
-// you can skip this function or adjust how you call it.
+// Optional helper to remove TLD
 function stripTLD(domain) {
   // Remove leading "www."
   let cleaned = domain.replace(/^www\./i, '');
@@ -77,7 +75,7 @@ router.get('/run', async (req, res) => {
 
     // 2) Create page & Chat instance
     const page = await browserContext.newPage();
-    const chatApi = new ChatOpenAI({ temperature: 0.1, modelName: 'gpt-4o' });
+    const chatApi = new ChatOpenAI({ temperature: 0.1, modelName: 'gpt-4' });
     await logActivity(email, 'Page & ChatAI instance created.', 'Success');
 
     // 3) Fetch competitor domains
@@ -87,7 +85,11 @@ router.get('/run', async (req, res) => {
       await logActivity(email, 'No competitor domains found in DB.', 'Success');
       return res.status(200).json({ message: 'No competitor domains found in DB.' });
     }
-    await logActivity(email, `Fetched competitor domains: ${competitorDoc.list.join(', ')}`, 'Success');
+    await logActivity(
+      email,
+      `Fetched competitor domains: ${competitorDoc.list.join(', ')}`,
+      'Success'
+    );
 
     // 4) Fetch prompts
     const prompts = await Prompt.find({});
@@ -106,6 +108,13 @@ router.get('/run', async (req, res) => {
       return res.status(200).json({ message: 'No Admin user found.' });
     }
     await logActivity(email, `Fetched Admin user: ${email}`, 'Success');
+
+    // ------------------------------------------------------------------
+    // === NEW STEP ===
+    // We'll accumulate this run's competitor data into a new array
+    // that we will push to adminUser.competitorResults at the end.
+    // ------------------------------------------------------------------
+    const runResults = [];
 
     // 6) Loop over each competitor domain
     for (const competitorDomain of competitorDoc.list) {
@@ -131,11 +140,11 @@ router.get('/run', async (req, res) => {
           `Error fetching data for ${competitorDomain}: ${err.message}`,
           'Failed'
         );
-        // Continue loop if we want to skip on error
+        // Skip this competitor on error
         continue;
       }
 
-      // (B) Build competitorEntry
+      // (B) Build competitorEntry object
       const competitorEntry = {
         domain: competitorDomain,
         similarWebData: {},
@@ -169,7 +178,6 @@ router.get('/run', async (req, res) => {
           Countries,
         } = data;
 
-        // store the main fields
         competitorEntry.similarWebData = {
           version: Version,
           siteName: SiteName,
@@ -193,7 +201,7 @@ router.get('/run', async (req, res) => {
           snapshotDate: SnapshotDate,
         };
 
-        // map the TopCountryShares to get code + name
+        // map topCountries if available
         if (Array.isArray(TopCountryShares) && Array.isArray(Countries)) {
           competitorEntry.topCountries = TopCountryShares.map((shareObj) => {
             const matched = Countries.find((c) => c.Code === shareObj.CountryCode);
@@ -201,13 +209,13 @@ router.get('/run', async (req, res) => {
               countryCode: shareObj.CountryCode,
               countryName: matched ? matched.Name : 'Unknown',
               share: shareObj.Value,
-              // We'll add "suggestions" array below
+              suggestions: [],
             };
           });
         }
       }
 
-      // (B.1) For each topCountry, get Google suggestions and store them in `ctry.suggestions`
+      // (B.1) For each topCountry, get Google suggestions
       if (competitorEntry.topCountries.length > 0) {
         // OPTIONAL: remove TLD from domain
         const domainWithoutTld = stripTLD(competitorDomain);
@@ -218,12 +226,8 @@ router.get('/run', async (req, res) => {
               email,
               `Fetching Google Autocomplete for "${domainWithoutTld}" (country: ${ctry.countryCode})`
             );
-            // e.g. pass `domainWithoutTld`, or if you prefer the full domain, use competitorDomain
             const suggestions = await getGoogleSuggestions(domainWithoutTld, ctry.countryCode);
-
-            // Attach suggestions to the same ctry object
             ctry.suggestions = suggestions;
-
             await logActivity(
               email,
               `Fetched ${suggestions.length} suggestions for ${domainWithoutTld} / ${ctry.countryCode}`
@@ -238,23 +242,16 @@ router.get('/run', async (req, res) => {
         }
       }
 
-      // (C) Push competitorEntry into adminUser, then save
-      adminUser.competitorResults.push(competitorEntry);
-      await adminUser.save();
-      await logActivity(email, `Data saved for: ${competitorDomain}`, 'Success');
-
-      // Reference newly added competitor subdocument
-      const addedIndex = adminUser.competitorResults.length - 1;
-      const competitorSubDoc = adminUser.competitorResults[addedIndex];
-
-      // (D) Run prompts
+      // (C) Run each prompt for this competitor
       for (const promptDoc of prompts) {
         await logActivity(email, `Executing Task: "${promptDoc.name}" for ${competitorDomain}`);
+
         // Replace placeholder
         const updatedCommand = promptDoc.command.replace('{{cream-deluxe.com}}', competitorDomain);
 
         let autoGPTResult = null;
         try {
+          // Call your AutoGPT logic
           autoGPTResult = await doActionWithAutoGPT(page, chatApi, updatedCommand, {
             headless: true,
             url: 'https://www.google.com',
@@ -268,31 +265,39 @@ router.get('/run', async (req, res) => {
           );
         }
 
-        // (Optional) Screenshot
+        // Take an optional screenshot
         await logPageScreenshot(page, `${promptDoc.name}-${competitorDomain}-screenshot.png`);
         await logActivity(
           email,
           `Screenshot captured for Task "${promptDoc.name}" and domain "${competitorDomain}".`
         );
 
-        // push prompt result into the competitor subdocument
-        competitorSubDoc.prompts.push({
+        // Push prompt result into competitorEntry.prompts
+        competitorEntry.prompts.push({
           promptName: promptDoc.name,
           result: autoGPTResult,
         });
 
-        // Mark modified + save so it commits to DB each time
-        adminUser.markModified('competitorResults');
-        await adminUser.save();
         await logActivity(
           email,
           `Task result saved for "${promptDoc.name}" / ${competitorDomain}`,
           'Success'
         );
       }
-    }
 
-    // Close browser
+      // (D) Finally, push the completed competitorEntry to the runResults array
+      runResults.push(competitorEntry);
+      await logActivity(email, `Finished competitor: ${competitorDomain}`, 'Success');
+    } // end of competitorDoc.list loop
+
+    // ------------------------------------------------------------------
+    // 7) After processing ALL competitors in this run:
+    //    push the entire batch (runResults) into adminUser.competitorResults
+    // ------------------------------------------------------------------
+    adminUser.competitorResults.push(runResults);
+    await adminUser.save();
+
+    // 8) Close browser
     await browserContext.close();
     await logActivity(email, 'Browser closed. Task finished.', 'Success');
 
