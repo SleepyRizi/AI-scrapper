@@ -1,3 +1,261 @@
+// import express from 'express';
+// import axios from 'axios';
+// import { chromium } from 'playwright';
+// import { ChatOpenAI } from 'langchain/chat_models/openai';
+
+// // Existing models
+// import Prompt from '../models/Prompt.js';
+// import Admin from '../models/Admin.js';
+// import Competitor from '../models/Competitor.js';
+
+// // NEW models
+// import Library from '../models/Library.js';
+// import Activity from '../models/Activity.js';
+
+// // Your AutoGPT action function
+// import { doActionWithAutoGPT } from '../autogpt/index.js';
+// // Utility for logging screenshots
+// import { logPageScreenshot } from '../util/index.js';
+
+// const router = express.Router();
+
+// // Helper function to log activity
+// async function logActivity(userEmail, message, status = 'Success') {
+//   try {
+//     await Activity.create({
+//       userEmail,
+//       message: `[${new Date().toISOString()}] ${message}`,
+//       status,
+//     });
+//   } catch (err) {
+//     console.error('Failed to log activity:', err);
+//   }
+// }
+
+// router.get('/run', async (req, res) => {
+//   try {
+//     // 0) Grab email, title & description from query
+//     const { email, title, description } = req.query;
+
+//     if (!email || !title || !description) {
+//       return res.status(400).json({
+//         message:
+//           'Missing required fields. "email", "title", and "description" are required in query params.',
+//       });
+//     }
+
+//     // 0.1) Store in the "Library" collection with userEmail
+//     await Library.create({ userEmail: email, title, description });
+//     await logActivity(email, `Received new task. Title: ${title}, Description: ${description}`);
+
+//     // 1) Launch browser
+//     await logActivity(email, 'Launching browser...');
+//     const userDataDir = 'userdata';
+//     const browserContext = await chromium.launchPersistentContext(userDataDir, {
+//       headless: false,
+//       viewport: { width: 1280, height: 720 },
+//     });
+//     await logActivity(email, 'Browser launched.', 'Success');
+
+//     // 2) Create page & Chat instance
+//     const page = await browserContext.newPage();
+//     const chatApi = new ChatOpenAI({ temperature: 0.1, modelName: 'gpt-4o' });
+//     await logActivity(email, 'Page & ChatAI instance created.', 'Success');
+
+//     // 3) Fetch competitor domains
+//     const competitorDoc = await Competitor.findOne({});
+//     if (!competitorDoc || !competitorDoc.list.length) {
+//       await browserContext.close();
+//       await logActivity(email, 'No competitor domains found in DB.', 'Success');
+//       return res.status(200).json({ message: 'No competitor domains found in DB.' });
+//     }
+//     await logActivity(email, `Fetched competitor domains: ${competitorDoc.list.join(', ')}`, 'Success');
+
+//     // 4) Fetch prompts
+//     const prompts = await Prompt.find({});
+//     if (!prompts.length) {
+//       await browserContext.close();
+//       await logActivity(email, 'No Task is found in DB.', 'Success');
+//       return res.status(200).json({ message: 'No Task is found in DB.' });
+//     }
+//     await logActivity(email, `Fetched ${prompts.length} Task from DB.`, 'Success');
+
+//     // 5) Fetch Admin user by email
+//     const adminUser = await Admin.findOne({ email });
+//     if (!adminUser) {
+//       await browserContext.close();
+//       await logActivity(email, `No Admin user found with that email: ${email}`, 'Failed');
+//       return res.status(200).json({ message: 'No Admin user found.' });
+//     }
+//     await logActivity(email, `Fetched Admin user: ${email}`, 'Success');
+
+//     // 6) Loop over each competitor domain
+//     for (const competitorDomain of competitorDoc.list) {
+//       await logActivity(email, `\nProcessing competitor: ${competitorDomain}`, 'Success');
+
+//       // (A) Fetch SimilarWeb data
+//       const similarWebUrl = `https://data.similarweb.com/api/v1/data?domain=${competitorDomain}`;
+//       let data = null;
+//       try {
+//         await logActivity(email, `Fetching data for: ${competitorDomain} ...`);
+//         const resp = await axios.get(similarWebUrl, {
+//           headers: {
+//             'User-Agent':
+//               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+//               '(KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36',
+//           },
+//         });
+//         data = resp.data;
+//         await logActivity(email, `Data fetched for: ${competitorDomain}`);
+//       } catch (err) {
+//         await logActivity(
+//           email,
+//           `Error fetching data for ${competitorDomain}: ${err.message}`,
+//           'Failed'
+//         );
+//         // If we want to continue loop despite error, just log; otherwise you can break/return.
+//       }
+
+//       // (B) Build competitorEntry
+//       const competitorEntry = {
+//         domain: competitorDomain,
+//         similarWebData: {},
+//         topCountries: [],
+//         prompts: [],
+//       };
+
+//       if (data) {
+//         const {
+//           Version,
+//           SiteName,
+//           Description,
+//           Title,
+//           Engagments,
+//           EstimatedMonthlyVisits,
+//           GlobalRank,
+//           CountryRank,
+//           CategoryRank,
+//           GlobalCategoryRank,
+//           IsSmall,
+//           Policy,
+//           TrafficSources,
+//           Category,
+//           LargeScreenshot,
+//           IsDataFromGa,
+//           Competitors,
+//           Notification,
+//           TopKeywords,
+//           SnapshotDate,
+//           TopCountryShares,
+//           Countries,
+//         } = data;
+
+//         // store the main fields
+//         competitorEntry.similarWebData = {
+//           version: Version,
+//           siteName: SiteName,
+//           description: Description,
+//           title: Title,
+//           engagements: Engagments,
+//           estimatedMonthlyVisits: EstimatedMonthlyVisits,
+//           globalRank: GlobalRank,
+//           countryRank: CountryRank,
+//           categoryRank: CategoryRank,
+//           globalCategoryRank: GlobalCategoryRank,
+//           isSmall: IsSmall,
+//           policy: Policy,
+//           trafficSources: TrafficSources,
+//           category: Category,
+//           largeScreenshot: LargeScreenshot,
+//           isDataFromGa: IsDataFromGa,
+//           competitorsInfo: Competitors,
+//           notification: Notification,
+//           topKeywords: TopKeywords,
+//           snapshotDate: SnapshotDate,
+//         };
+
+//         // map the TopCountryShares to get code + name
+//         if (Array.isArray(TopCountryShares) && Array.isArray(Countries)) {
+//           competitorEntry.topCountries = TopCountryShares.map((shareObj) => {
+//             const matched = Countries.find((c) => c.Code === shareObj.CountryCode);
+//             return {
+//               countryCode: shareObj.CountryCode,
+//               countryName: matched ? matched.Name : 'Unknown',
+//               share: shareObj.Value,
+//             };
+//           });
+//         }
+//       }
+
+//       // (C) Push into adminUser and save
+//       adminUser.competitorResults.push(competitorEntry);
+//       await adminUser.save();
+//       await logActivity(email, `Data saved for: ${competitorDomain}`, 'Success');
+
+//       // Now let's reference the newly added competitor subdocument
+//       const addedIndex = adminUser.competitorResults.length - 1;
+//       const competitorSubDoc = adminUser.competitorResults[addedIndex];
+
+//       // (D) Run prompts
+//       for (const promptDoc of prompts) {
+//         await logActivity(email, `Executing Task: "${promptDoc.name}" for ${competitorDomain}`);
+//         const updatedCommand = promptDoc.command.replace('{{cream-deluxe.com}}', competitorDomain);
+
+//         let autoGPTResult = null;
+//         try {
+//           autoGPTResult = await doActionWithAutoGPT(page, chatApi, updatedCommand, {
+//             headless: false,
+//             url: 'https://www.google.com',
+//           });
+//           await logActivity(email, `AI Agent execution success for Task "${promptDoc.name}".`);
+//         } catch (err) {
+//           await logActivity(
+//             email,
+//             `AI Agent error for Task "${promptDoc.name}": ${err.message}`,
+//             'Failed'
+//           );
+//         }
+
+//         // Screenshot (optional)
+//         await logPageScreenshot(page, `${promptDoc.name}-${competitorDomain}-screenshot.png`);
+//         await logActivity(
+//           email,
+//           `Screenshot captured for Task "${promptDoc.name}" and domain "${competitorDomain}".`
+//         );
+
+//         // push prompt result into the competitor subdocument
+//         competitorSubDoc.prompts.push({
+//           promptName: promptDoc.name,
+//           result: autoGPTResult,
+//         });
+
+//         // Mark modified + save so it commits to DB each time
+//         adminUser.markModified('competitorResults');
+//         await adminUser.save();
+//         await logActivity(
+//           email,
+//           `Task result saved for "${promptDoc.name}" / ${competitorDomain}`,
+//           'Success'
+//         );
+//       }
+//     }
+
+//     // Close browser
+//     await browserContext.close();
+//     await logActivity(email, 'Browser closed. Task finished.', 'Success');
+
+//     // Return
+//     return res.status(200).json({ message: 'Finished. Data stored in MongoDB.' });
+//   } catch (err) {
+//     console.error('Error running competitor Tasks:', err);
+//     await logActivity(req.query.email || 'Unknown', `Unexpected error: ${err.message}`, 'Failed');
+//     return res.status(500).json({ error: err.message || 'Internal server error' });
+//   }
+// });
+
+/**
+ * File: /routes/runAutoGPT.js
+ */
 import express from 'express';
 import axios from 'axios';
 import { chromium } from 'playwright';
@@ -12,28 +270,11 @@ import Competitor from '../models/Competitor.js';
 import Library from '../models/Library.js';
 import Activity from '../models/Activity.js';
 
-// Your AutoGPT action function
+// Your updated AutoGPT action function
 import { doActionWithAutoGPT } from '../autogpt/index.js';
-
-// Utility for logging screenshots
 import { logPageScreenshot } from '../util/index.js';
 
-// Google autocomplete helper
-import { getGoogleSuggestions } from '../util/googleAutocomplete.js';
-
 const router = express.Router();
-
-// Optional helper to remove TLD
-function stripTLD(domain) {
-  // Remove leading "www."
-  let cleaned = domain.replace(/^www\./i, '');
-  // Remove final dot segment
-  const lastDotIndex = cleaned.lastIndexOf('.');
-  if (lastDotIndex > 0) {
-    cleaned = cleaned.substring(0, lastDotIndex);
-  }
-  return cleaned;
-}
 
 // Helper function to log activity
 async function logActivity(userEmail, message, status = 'Success') {
@@ -50,17 +291,18 @@ async function logActivity(userEmail, message, status = 'Success') {
 
 router.get('/run', async (req, res) => {
   try {
-    // 0) Grab email, title & description from query
-    const { email, title, description } = req.query;
-
+    // 0) Grab query params
+    const { email, title, description, stored } = req.query;
     if (!email || !title || !description) {
       return res.status(400).json({
         message:
           'Missing required fields. "email", "title", and "description" are required in query params.',
       });
     }
+    // default stored type to 'new' if not provided
+    const storedType = stored || 'new';
 
-    // 0.1) Store in the "Library" collection with userEmail
+    // 0.1) Save in Library
     await Library.create({ userEmail: email, title, description });
     await logActivity(email, `Received new task. Title: ${title}, Description: ${description}`);
 
@@ -68,14 +310,14 @@ router.get('/run', async (req, res) => {
     await logActivity(email, 'Launching browser...');
     const userDataDir = 'userdata';
     const browserContext = await chromium.launchPersistentContext(userDataDir, {
-      headless: true,
+      headless: false,
       viewport: { width: 1280, height: 720 },
     });
     await logActivity(email, 'Browser launched.', 'Success');
 
     // 2) Create page & Chat instance
     const page = await browserContext.newPage();
-    const chatApi = new ChatOpenAI({ temperature: 0.1, modelName: 'gpt-4' });
+    const chatApi = new ChatOpenAI({ temperature: 0.1, modelName: 'gpt-4o' });
     await logActivity(email, 'Page & ChatAI instance created.', 'Success');
 
     // 3) Fetch competitor domains
@@ -85,11 +327,7 @@ router.get('/run', async (req, res) => {
       await logActivity(email, 'No competitor domains found in DB.', 'Success');
       return res.status(200).json({ message: 'No competitor domains found in DB.' });
     }
-    await logActivity(
-      email,
-      `Fetched competitor domains: ${competitorDoc.list.join(', ')}`,
-      'Success'
-    );
+    await logActivity(email, `Fetched competitor domains: ${competitorDoc.list.join(', ')}`, 'Success');
 
     // 4) Fetch prompts
     const prompts = await Prompt.find({});
@@ -98,7 +336,7 @@ router.get('/run', async (req, res) => {
       await logActivity(email, 'No Task is found in DB.', 'Success');
       return res.status(200).json({ message: 'No Task is found in DB.' });
     }
-    await logActivity(email, `Fetched ${prompts.length} Task from DB.`, 'Success');
+    await logActivity(email, `Fetched ${prompts.length} Task(s) from DB.`, 'Success');
 
     // 5) Fetch Admin user by email
     const adminUser = await Admin.findOne({ email });
@@ -109,20 +347,13 @@ router.get('/run', async (req, res) => {
     }
     await logActivity(email, `Fetched Admin user: ${email}`, 'Success');
 
-    // ------------------------------------------------------------------
-    // === NEW STEP ===
-    // We'll accumulate this run's competitor data into a new array
-    // that we will push to adminUser.competitorResults at the end.
-    // ------------------------------------------------------------------
-    const runResults = [];
-
-    // 6) Loop over each competitor domain
+    // 6) Loop over competitor domains
     for (const competitorDomain of competitorDoc.list) {
       await logActivity(email, `\nProcessing competitor: ${competitorDomain}`, 'Success');
 
       // (A) Fetch SimilarWeb data
-      const similarWebUrl = `https://data.similarweb.com/api/v1/data?domain=${competitorDomain}`;
       let data = null;
+      const similarWebUrl = `https://data.similarweb.com/api/v1/data?domain=${competitorDomain}`;
       try {
         await logActivity(email, `Fetching data for: ${competitorDomain} ...`);
         const resp = await axios.get(similarWebUrl, {
@@ -140,11 +371,10 @@ router.get('/run', async (req, res) => {
           `Error fetching data for ${competitorDomain}: ${err.message}`,
           'Failed'
         );
-        // Skip this competitor on error
-        continue;
+        // continue even if error
       }
 
-      // (B) Build competitorEntry object
+      // (B) Build competitorEntry
       const competitorEntry = {
         domain: competitorDomain,
         similarWebData: {},
@@ -152,6 +382,7 @@ router.get('/run', async (req, res) => {
         prompts: [],
       };
 
+      // fill competitorEntry if data is not null
       if (data) {
         const {
           Version,
@@ -201,7 +432,7 @@ router.get('/run', async (req, res) => {
           snapshotDate: SnapshotDate,
         };
 
-        // map topCountries if available
+        // topCountries
         if (Array.isArray(TopCountryShares) && Array.isArray(Countries)) {
           competitorEntry.topCountries = TopCountryShares.map((shareObj) => {
             const matched = Countries.find((c) => c.Code === shareObj.CountryCode);
@@ -209,55 +440,87 @@ router.get('/run', async (req, res) => {
               countryCode: shareObj.CountryCode,
               countryName: matched ? matched.Name : 'Unknown',
               share: shareObj.Value,
-              suggestions: [],
             };
           });
         }
       }
 
-      // (B.1) For each topCountry, get Google suggestions
-      if (competitorEntry.topCountries.length > 0) {
-        // OPTIONAL: remove TLD from domain
-        const domainWithoutTld = stripTLD(competitorDomain);
+      // (C) Insert competitorEntry into competitorResults
+      let newOuterIndex = -1; // we'll track which index we insert
+      if (storedType === 'new') {
+        // always create brand-new top-level array
+        adminUser.competitorResults.push([competitorEntry]);
+        newOuterIndex = adminUser.competitorResults.length - 1;
+      } else {
+        // stored=old => find the *last* outer array with [0].domain === competitorDomain
+        let foundIndex = -1;
+        for (let i = adminUser.competitorResults.length - 1; i >= 0; i--) {
+          const arr = adminUser.competitorResults[i];
+          if (arr.length > 0 && arr[0].domain === competitorDomain) {
+            foundIndex = i;
+            break;
+          }
+        }
+        if (foundIndex >= 0) {
+          adminUser.competitorResults[foundIndex].push(competitorEntry);
+          newOuterIndex = foundIndex;
+        } else {
+          // no existing array => create new
+          adminUser.competitorResults.push([competitorEntry]);
+          newOuterIndex = adminUser.competitorResults.length - 1;
+        }
+      }
 
-        for (const ctry of competitorEntry.topCountries) {
-          try {
-            await logActivity(
-              email,
-              `Fetching Google Autocomplete for "${domainWithoutTld}" (country: ${ctry.countryCode})`
+      // the newly inserted competitor entry is the last item in that newOuterIndex array
+      const newInnerIndex = adminUser.competitorResults[newOuterIndex].length - 1;
+
+      // Save now so the competitor entry is definitely in DB
+      adminUser.markModified('competitorResults');
+      await adminUser.save();
+
+      await logActivity(email, `Data saved for: ${competitorDomain}`, 'Success');
+
+      // (C.1) Grab the LAST Website_Extractor result from the PREVIOUS top-level array (outerIndex-1)
+      let lastWebsiteExtractorResult = {};
+      if (adminUser.competitorResults.length > 1) {
+        const prevOuterIndex = adminUser.competitorResults.length - 2;
+        const prevOuterArr = adminUser.competitorResults[prevOuterIndex];
+        if (prevOuterArr.length > 0) {
+          const lastCompetitorDoc = prevOuterArr[prevOuterArr.length - 1];
+          if (Array.isArray(lastCompetitorDoc.prompts) && lastCompetitorDoc.prompts.length > 0) {
+            const websiteExtractorPrompts = lastCompetitorDoc.prompts.filter(
+              (p) => p.promptName === 'Website_Extractor'
             );
-            const suggestions = await getGoogleSuggestions(domainWithoutTld, ctry.countryCode);
-            ctry.suggestions = suggestions;
-            await logActivity(
-              email,
-              `Fetched ${suggestions.length} suggestions for ${domainWithoutTld} / ${ctry.countryCode}`
-            );
-          } catch (err) {
-            await logActivity(
-              email,
-              `Error getting suggestions for ${domainWithoutTld} (${ctry.countryCode}): ${err.message}`,
-              'Failed'
-            );
+            if (websiteExtractorPrompts.length > 0) {
+              lastWebsiteExtractorResult =
+                websiteExtractorPrompts[websiteExtractorPrompts.length - 1].result || {};
+            }
           }
         }
       }
 
-      // (C) Run each prompt for this competitor
+      // (D) Run prompts
       for (const promptDoc of prompts) {
         await logActivity(email, `Executing Task: "${promptDoc.name}" for ${competitorDomain}`);
+        let updatedCommand = promptDoc.command.replace('{{cream-deluxe.com}}', competitorDomain);
 
-        // Replace placeholder
-        const updatedCommand = promptDoc.command.replace('{{cream-deluxe.com}}', competitorDomain);
+        if (promptDoc.name === 'Website_Extractor') {
+          updatedCommand = updatedCommand.replace(
+            '{{previous_data}}',
+            JSON.stringify(lastWebsiteExtractorResult)
+          );
+        }
 
         let autoGPTResult = null;
         try {
-          // Call your AutoGPT logic
           autoGPTResult = await doActionWithAutoGPT(page, chatApi, updatedCommand, {
-            headless: true,
+            headless: false,
             url: 'https://www.google.com',
           });
+          console.log(`autoGPTResult for prompt "${promptDoc.name}": `, autoGPTResult);
           await logActivity(email, `AI Agent execution success for Task "${promptDoc.name}".`);
         } catch (err) {
+          console.error('AI Agent error:', err);
           await logActivity(
             email,
             `AI Agent error for Task "${promptDoc.name}": ${err.message}`,
@@ -265,18 +528,23 @@ router.get('/run', async (req, res) => {
           );
         }
 
-        // Take an optional screenshot
-        await logPageScreenshot(page, `${promptDoc.name}-${competitorDomain}-screenshot.png`);
-        await logActivity(
-          email,
-          `Screenshot captured for Task "${promptDoc.name}" and domain "${competitorDomain}".`
-        );
-
-        // Push prompt result into competitorEntry.prompts
-        competitorEntry.prompts.push({
+        // Now we push the result *directly* into the correct location in competitorResults:
+        adminUser.competitorResults[newOuterIndex][newInnerIndex].prompts.push({
           promptName: promptDoc.name,
           result: autoGPTResult,
         });
+
+        // Mark + Save
+        adminUser.markModified('competitorResults');
+        await adminUser.save();
+
+        // Debug: read back from DB
+        const checkAdmin = await Admin.findOne({ email }).lean();
+        const lastArray = checkAdmin.competitorResults[newOuterIndex];
+        console.log(
+          `After saving prompt "${promptDoc.name}":`,
+          JSON.stringify(lastArray[lastArray.length - 1], null, 2)
+        );
 
         await logActivity(
           email,
@@ -284,24 +552,11 @@ router.get('/run', async (req, res) => {
           'Success'
         );
       }
+    } // end for competitorDomain
 
-      // (D) Finally, push the completed competitorEntry to the runResults array
-      runResults.push(competitorEntry);
-      await logActivity(email, `Finished competitor: ${competitorDomain}`, 'Success');
-    } // end of competitorDoc.list loop
-
-    // ------------------------------------------------------------------
-    // 7) After processing ALL competitors in this run:
-    //    push the entire batch (runResults) into adminUser.competitorResults
-    // ------------------------------------------------------------------
-    adminUser.competitorResults.push(runResults);
-    await adminUser.save();
-
-    // 8) Close browser
+    // close browser
     await browserContext.close();
     await logActivity(email, 'Browser closed. Task finished.', 'Success');
-
-    // Return
     return res.status(200).json({ message: 'Finished. Data stored in MongoDB.' });
   } catch (err) {
     console.error('Error running competitor Tasks:', err);

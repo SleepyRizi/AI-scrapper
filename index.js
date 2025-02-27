@@ -238,6 +238,77 @@ app.patch('/api/admin-data/update-reseller', checkAuth, async (req, res) => {
   }
 });
 
+
+
+app.patch('/api/admin-data/update-web-extraction', checkAuth, async (req, res) => {
+  const { competitorDomain, item_identifier, status } = req.body;
+
+  if (!competitorDomain || !item_identifier) {
+    return res.status(400).json({
+      error: 'competitorDomain and item_identifier are required fields.'
+    });
+  }
+
+  try {
+    const userEmail = req.admin.email;
+    const adminDoc = await Admin.findOne({ email: userEmail });
+    if (!adminDoc) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+
+    // Ensure there's at least one competitor batch
+    const competitorBatches = adminDoc.competitorResults;
+    if (!Array.isArray(competitorBatches) || competitorBatches.length === 0) {
+      return res.status(404).json({ error: 'No competitor results found yet.' });
+    }
+
+    // Use the most recent batch (last element)
+    const lastBatch = competitorBatches[competitorBatches.length - 1];
+
+    // Find competitor subdoc by domain
+    const competitorIndex = lastBatch.findIndex(c => c.domain === competitorDomain);
+    if (competitorIndex === -1) {
+      return res.status(404).json({ error: 'Competitor not found in the most recent batch' });
+    }
+    const competitor = lastBatch[competitorIndex];
+
+    // Find the 'Website_Extractor' prompt
+    const extractorPrompt = competitor.prompts.find(
+      (p) => p.promptName === 'Website_Extractor'
+    );
+    if (!extractorPrompt || !extractorPrompt.result) {
+      return res.status(404).json({
+        error: `Website_Extractor prompt not found for domain ${competitorDomain}`
+      });
+    }
+
+    // Ensure we have an array of extraction items
+    const extractionItems = extractorPrompt.result.data;
+    if (!Array.isArray(extractionItems)) {
+      return res.status(404).json({ error: 'No extraction data found' });
+    }
+
+    // Locate the extraction item by its unique item_identifier
+    const itemIndex = extractionItems.findIndex(item => item.item_identifier === item_identifier);
+    if (itemIndex === -1) {
+      return res.status(404).json({ error: 'Extraction item not found' });
+    }
+
+    // Update status – defaulting to 'Unread' if not provided
+    extractionItems[itemIndex].status = (typeof status !== 'undefined') ? status : (extractionItems[itemIndex].status || 'Unread');
+
+    // Mark the competitorResults field as modified and save the admin document
+    adminDoc.markModified('competitorResults');
+    await adminDoc.save();
+
+    return res.json({ success: true, message: 'Web extraction item updated successfully' });
+  } catch (error) {
+    console.error('Error updating web extraction item:', error);
+    res.status(500).json({ error: 'Server error updating web extraction item' });
+  }
+});
+
+
 /**
  * PATCH /api/admin-data/update-webmention
  *
@@ -337,9 +408,7 @@ app.get('/api/admin-data/new-web-mentions', checkAuth, async (req, res) => {
   try {
     const { domain } = req.query;
     if (!domain) {
-      return res
-        .status(400)
-        .json({ error: 'Missing "domain" query parameter.' });
+      return res.status(400).json({ error: 'Missing "domain" query parameter.' });
     }
 
     const userEmail = req.admin.email;
@@ -352,49 +421,54 @@ app.get('/api/admin-data/new-web-mentions', checkAuth, async (req, res) => {
       return res.status(404).json({ error: 'Admin not found' });
     }
 
-    // Flatten all competitor subdocs across all runs, but we still need to group them by run
-    const allBatches = adminDoc.competitorResults; // array of arrays
-    if (!allBatches.length) {
+    // competitorResults is an array of batches (each batch is an array of competitor subdocs)
+    const allBatches = adminDoc.competitorResults;
+    if (!Array.isArray(allBatches) || allBatches.length === 0) {
       return res.status(404).json({ error: 'No competitor results found at all.' });
     }
 
-    // Gather all subdocs for the given domain across all runs
-    // For each run in allBatches, find that domain's competitor subdoc
+    // For each batch, find the competitor subdoc with matching domain
     const domainEntries = allBatches
-      .map((batch) => batch.find((c) => c.domain === domain))
+      .map(batch => batch.find(c => c.domain === domain))
       .filter(Boolean);
 
-    if (!domainEntries.length) {
-      return res
-        .status(404)
-        .json({ error: 'No competitor results found for that domain.' });
+    if (domainEntries.length === 0) {
+      return res.status(404).json({ error: 'No competitor results found for that domain.' });
     }
 
-    // The newest competitor subdoc is in the last item of domainEntries
-    // domainEntries are in order of how we pushed them. So the last item is newest
+    // The newest competitor subdoc is the last one in the array
     const newestEntry = domainEntries[domainEntries.length - 1];
-    const olderEntries = domainEntries.slice(0, domainEntries.length - 1);
+    const olderEntries = domainEntries.slice(0, -1);
 
-    // Grab the newest Web Mentions
-    const newestPrompt = newestEntry.prompts.find(
-      (p) => p.promptName === 'Top_Web_Menthions'
-    );
-    const newestMentions = newestPrompt?.result?.web_mentions || [];
+    // Retrieve the "Top_Web_Menthions" prompt from the newest entry
+    const newestPrompt = newestEntry.prompts.find(p => p.promptName === 'Top_Web_Menthions');
+    if (!newestPrompt || !newestPrompt.result) {
+      return res.status(404).json({ error: 'No Top_Web_Menthions prompt found in the newest entry.' });
+    }
 
-    // Gather all web mention URLs from older entries
+    // Optionally verify that the competitor_domain in the result matches the provided domain
+    if (newestPrompt.result.competitor_domain !== domain) {
+      return res.status(400).json({ error: 'Mismatch between provided domain and competitor_domain in newest entry.' });
+    }
+
+    const newestMentions = Array.isArray(newestPrompt.result.web_mentions)
+      ? newestPrompt.result.web_mentions
+      : [];
+
+    // Gather all source URLs from older entries
     const olderURLs = new Set();
-    olderEntries.forEach((entry) => {
-      const olderPrompt = entry.prompts.find((p) => p.promptName === 'Top_Web_Menthions');
-      const olderMentions = olderPrompt?.result?.web_mentions || [];
-      olderMentions.forEach((m) => {
-        olderURLs.add(m.source_url);
+    olderEntries.forEach(entry => {
+      const prompt = entry.prompts.find(p => p.promptName === 'Top_Web_Menthions');
+      const mentions = prompt && prompt.result && Array.isArray(prompt.result.web_mentions)
+        ? prompt.result.web_mentions
+        : [];
+      mentions.forEach(mention => {
+        if (mention.source_url) olderURLs.add(mention.source_url);
       });
     });
 
-    // Filter the newest mentions for those not in olderURLs
-    const newMentions = newestMentions.filter(
-      (mention) => !olderURLs.has(mention.source_url)
-    );
+    // Filter the newest mentions for those not present in older URLs
+    const newMentions = newestMentions.filter(mention => !olderURLs.has(mention.source_url));
 
     return res.json({
       domain,
@@ -402,9 +476,113 @@ app.get('/api/admin-data/new-web-mentions', checkAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching new web mentions:', error);
-    res.status(500).json({ error: 'Server error fetching new web mentions' });
+    return res.status(500).json({ error: 'Server error fetching new web mentions' });
   }
 });
+
+
+app.get('/api/admin-data/new-top-resellers', checkAuth, async (req, res) => {
+  try {
+    const { domain } = req.query;
+    console.log('[new-top-resellers] Query domain:', domain);
+    if (!domain) {
+      return res.status(400).json({ error: 'Missing "domain" query parameter.' });
+    }
+
+    const userEmail = req.admin.email;
+    console.log('[new-top-resellers] User email from JWT:', userEmail);
+    if (!userEmail) {
+      return res.status(400).json({ error: 'JWT does not contain an email field.' });
+    }
+
+    const adminDoc = await Admin.findOne({ email: userEmail });
+    console.log('[new-top-resellers] Found adminDoc:', adminDoc ? adminDoc.email : null);
+    if (!adminDoc) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+
+    // competitorResults is an array of batches (each batch is an array of competitor subdocs)
+    const allBatches = adminDoc.competitorResults;
+    console.log('[new-top-resellers] Total competitor batches:', Array.isArray(allBatches) ? allBatches.length : 'none');
+    if (!Array.isArray(allBatches) || allBatches.length === 0) {
+      return res.status(404).json({ error: 'No competitor results found at all.' });
+    }
+
+    // For each batch, find the competitor subdoc with matching domain (using the field "domain")
+    const domainEntries = allBatches
+      .map(batch => batch.find(c => c.domain === domain))
+      .filter(Boolean);
+    console.log('[new-top-resellers] Number of matching competitor entries:', domainEntries.length);
+
+    if (domainEntries.length === 0) {
+      return res.status(404).json({ error: 'No competitor results found for that domain.' });
+    }
+
+    // Use the last competitor entry as the newest; use the immediate previous entry (if available) for comparison.
+    const newestEntry = domainEntries[domainEntries.length - 1];
+    let previousEntry = null;
+    if (domainEntries.length > 1) {
+      previousEntry = domainEntries[domainEntries.length - 2];
+    }
+    console.log('[new-top-resellers] Newest entry found. Previous entry exists:', !!previousEntry);
+
+    // Retrieve the "Top_Resellers" prompt from the newest entry.
+    const newestPrompt = newestEntry.prompts.find(p => p.promptName === 'Top_Resellers');
+    if (!newestPrompt || !newestPrompt.result) {
+      console.log('[new-top-resellers] No Top_Resellers prompt found in newest entry.');
+      return res.status(404).json({ error: 'No Top_Resellers prompt found in the newest entry.' });
+    }
+    console.log('[new-top-resellers] competitor_domain in newest prompt:', newestPrompt.result.competitor_domain);
+
+    // Normalize domains by stripping ".com"
+    const normalizedProvided = domain.replace('.com', '');
+    if (newestPrompt.result.competitor_domain.replace('.com', '') !== normalizedProvided) {
+      console.log('[new-top-resellers] Provided domain and competitor_domain mismatch:', domain, newestPrompt.result.competitor_domain);
+      return res.status(400).json({
+        error: 'Mismatch between provided domain and competitor_domain in newest entry.'
+      });
+    }
+
+    // Extract the newest resellers array (default to empty if missing)
+    const newestResellers = Array.isArray(newestPrompt.result.resellers)
+      ? newestPrompt.result.resellers
+      : [];
+    console.log('[new-top-resellers] Number of resellers in newest entry:', newestResellers.length);
+
+    // Gather reseller URLs from ONLY the immediate previous competitor entry (if available)
+    const olderURLs = new Set();
+    if (previousEntry) {
+      const prompt = previousEntry.prompts.find(p => p.promptName === 'Top_Resellers');
+      const previousResellers = prompt && prompt.result && Array.isArray(prompt.result.resellers)
+        ? prompt.result.resellers
+        : [];
+      previousResellers.forEach(reseller => {
+        if (reseller.reseller_url) {
+          olderURLs.add(reseller.reseller_url);
+        }
+      });
+      console.log('[new-top-resellers] Total reseller URLs from previous entry:', olderURLs.size);
+    } else {
+      console.log('[new-top-resellers] No previous competitor entry available for comparison.');
+    }
+
+    // Filter the newest resellers for those whose reseller_url is not present in the previous entry.
+    const newTopResellers = newestResellers.filter(
+      reseller => reseller.reseller_url && !olderURLs.has(reseller.reseller_url)
+    );
+    console.log('[new-top-resellers] New top resellers count:', newTopResellers.length);
+
+    return res.json({
+      domain,
+      newTopResellers
+    });
+  } catch (error) {
+    console.error('Error fetching new top resellers:', error);
+    return res.status(500).json({ error: 'Server error fetching new top resellers' });
+  }
+});
+
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

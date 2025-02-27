@@ -49,6 +49,8 @@ const adminSchema = new mongoose.Schema(
 
     // Each time you run the /run endpoint, it will create
     // a *new array* of competitorResults and push it to this outer array.
+    // competitorResults: [competitorResultSchema],
+
     competitorResults: {
       type: [[competitorResultSchema]],
       default: [],
