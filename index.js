@@ -240,12 +240,18 @@ app.patch('/api/admin-data/update-reseller', checkAuth, async (req, res) => {
 
 
 
+// File: server.js (or wherever your Express app is set up)
 app.patch('/api/admin-data/update-web-extraction', checkAuth, async (req, res) => {
-  const { competitorDomain, item_identifier, status } = req.body;
+  const { competitorDomain, item_identifier, status, group } = req.body;
 
   if (!competitorDomain || !item_identifier) {
     return res.status(400).json({
       error: 'competitorDomain and item_identifier are required fields.'
+    });
+  }
+  if (!group) {
+    return res.status(400).json({
+      error: 'group is required (e.g. "main", "added", "modified", or "removed").'
     });
   }
 
@@ -282,26 +288,52 @@ app.patch('/api/admin-data/update-web-extraction', checkAuth, async (req, res) =
       });
     }
 
-    // Ensure we have an array of extraction items
-    const extractionItems = extractorPrompt.result.data;
-    if (!Array.isArray(extractionItems)) {
-      return res.status(404).json({ error: 'No extraction data found' });
+    // If group is "main"/"current", we update in result.data
+    // Otherwise, we update inside result.changes[group]
+    let itemsArray;
+    if (group === 'main' || group === 'current') {
+      if (!Array.isArray(extractorPrompt.result.data)) {
+        return res.status(404).json({ error: 'No main extraction data found in "data" array.' });
+      }
+      itemsArray = extractorPrompt.result.data;
+    } else {
+      // For "added", "modified", or "removed", we look inside result.changes
+      if (!extractorPrompt.result.changes) {
+        return res.status(404).json({ error: 'No "changes" object found in Website_Extractor result.' });
+      }
+
+      const validGroups = ['added', 'removed', 'modified'];
+      if (!validGroups.includes(group)) {
+        return res.status(400).json({ error: `Invalid group "${group}". Must be one of [${validGroups.join(', ')}].` });
+      }
+
+      // Ensure the changes array exists (e.g. added, removed, or modified).
+      if (!Array.isArray(extractorPrompt.result.changes[group])) {
+        return res.status(404).json({ error: `No "${group}" array found in "changes".` });
+      }
+
+      itemsArray = extractorPrompt.result.changes[group];
     }
 
-    // Locate the extraction item by its unique item_identifier
-    const itemIndex = extractionItems.findIndex(item => item.item_identifier === item_identifier);
+    // Locate the extraction item by its item_identifier in the chosen array
+    const itemIndex = itemsArray.findIndex(item => item.item_identifier === item_identifier);
     if (itemIndex === -1) {
-      return res.status(404).json({ error: 'Extraction item not found' });
+      return res.status(404).json({ error: `Extraction item not found in group "${group}".` });
     }
 
     // Update status – defaulting to 'Unread' if not provided
-    extractionItems[itemIndex].status = (typeof status !== 'undefined') ? status : (extractionItems[itemIndex].status || 'Unread');
+    itemsArray[itemIndex].status = (typeof status !== 'undefined')
+      ? status
+      : (itemsArray[itemIndex].status || 'Unread');
 
     // Mark the competitorResults field as modified and save the admin document
     adminDoc.markModified('competitorResults');
     await adminDoc.save();
 
-    return res.json({ success: true, message: 'Web extraction item updated successfully' });
+    return res.json({
+      success: true,
+      message: `Web extraction item updated successfully in group "${group}".`
+    });
   } catch (error) {
     console.error('Error updating web extraction item:', error);
     res.status(500).json({ error: 'Server error updating web extraction item' });
