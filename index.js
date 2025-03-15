@@ -28,6 +28,10 @@ import previewRoutes from './routes/previewRoutes.js';
 // Middleware for checking auth
 import checkAuth from './middleware/authMiddleware.js';
 
+
+import transporter from './config/emailTransport.js';   // your nodemailer config
+import { computeWeeklyStats } from './util/computeWeeklyStats.js';
+
 const app = express();
 
 // Middleware
@@ -611,6 +615,187 @@ app.get('/api/admin-data/new-top-resellers', checkAuth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching new top resellers:', error);
     return res.status(500).json({ error: 'Server error fetching new top resellers' });
+  }
+});
+
+// File: src/index.js (or a new route in routes/)
+app.patch('/api/admin-data/update-login-email', checkAuth, async (req, res) => {
+  try {
+    const { newEmail } = req.body;
+    if (!newEmail) {
+      return res.status(400).json({ error: 'newEmail is required.' });
+    }
+
+    // Check if newEmail is already in use
+    const existing = await Admin.findOne({ email: newEmail });
+    if (existing) {
+      return res.status(400).json({ error: 'That email is already in use.' });
+    }
+
+    const userEmail = req.admin.email; // from checkAuth
+    if (!userEmail) {
+      return res.status(400).json({ error: 'JWT does not contain an email field.' });
+    }
+
+    const adminDoc = await Admin.findOne({ email: userEmail });
+    if (!adminDoc) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+
+    adminDoc.email = newEmail;
+    await adminDoc.save();
+
+    // You may want to return a new JWT here,
+    // or force the user to log out and log in again, 
+    // because their old token may contain the old email in its payload.
+    // For simplicity, just respond with success:
+
+    return res.json({
+      message: 'Login email updated successfully',
+      email: adminDoc.email,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Server error updating login email' });
+  }
+});
+
+
+
+app.patch('/api/admin-data/update-name', checkAuth, async (req, res) => {
+  try {
+    const { newName } = req.body;
+    if (!newName) {
+      return res.status(400).json({ error: 'newName is required.' });
+    }
+
+    // The JWT (decoded by checkAuth) has `req.admin.email`
+    const userEmail = req.admin.email;
+    if (!userEmail) {
+      return res.status(400).json({ error: 'JWT does not contain an email field.' });
+    }
+
+    // Find the admin by their unique email
+    const adminDoc = await Admin.findOne({ email: userEmail });
+    if (!adminDoc) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+
+    // Update the name field
+    adminDoc.name = newName;
+    await adminDoc.save();
+
+    return res.json({
+      message: 'Name updated successfully',
+      name: adminDoc.name,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Server error updating name' });
+  }
+});
+
+
+
+app.post('/api/force-weekly-email', checkAuth, async (req, res) => {
+  try {
+    // 1) Find the current Admin doc by JWT's email
+    const userEmail = req.admin.email;
+    const adminDoc = await Admin.findOne({ email: userEmail });
+    if (!adminDoc) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+
+    // 2) If there's no competitorResults or it's empty
+    if (!adminDoc.competitorResults || adminDoc.competitorResults.length === 0) {
+      return res.status(400).json({ error: 'No competitor data to summarize' });
+    }
+
+    // Use the *latest* batch: the last index
+    const latestBatch = adminDoc.competitorResults[adminDoc.competitorResults.length - 1];
+
+    // 3) Compute stats
+    const {
+      totalNewProspects,
+      totalOpenProspects,
+      totalNewContent,
+      totalOpenContent,
+      totalNewChanges,
+      totalOpenChanges,
+      summaryHtml,
+    } = computeWeeklyStats(latestBatch);
+
+    // 4) Build an HTML email
+    const adminName = adminDoc.name || 'Administrator';
+    const recipientEmail = adminDoc.notificationEmail || adminDoc.email;
+
+    const htmlBody = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
+        <h2 style="margin-top: 0; background: #0275d8; color: #fff; padding: 12px;">
+          Hello ${adminName}, here is your Weekly Summary!
+        </h2>
+
+        <div style="padding: 12px;">
+          <p style="margin-bottom: 10px;">
+            Below are your competitor tracking stats:
+          </p>
+
+          <table style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">
+            <tr style="background: #f5f5f5;">
+              <th style="text-align:left; padding: 8px;">Metric</th>
+              <th style="text-align:left; padding: 8px;">Count</th>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">New Found Prospects</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${totalNewProspects}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">Open Prospects</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${totalOpenProspects}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">New Found Content</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${totalNewContent}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">Open Content</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${totalOpenContent}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">New Competitor Changes</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${totalNewChanges}</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">Open Competitor Changes</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${totalOpenChanges}</td>
+            </tr>
+          </table>
+
+          <h3 style="margin-bottom: 10px;">Detailed Summary</h3>
+          ${summaryHtml}
+
+          <p style="margin-top: 20px; font-size: 12px; color: #555;">
+            This is an automated email from your competitor tracking tool.
+            <br />
+            &copy; ${new Date().getFullYear()} My Company
+          </p>
+        </div>
+      </div>
+    `;
+
+    // 5) Send via nodemailer
+    await transporter.sendMail({
+      from: '"My App" <no-reply@myapp.com>',
+      to: recipientEmail,
+      subject: 'Your Competitor Weekly Stats',
+      html: htmlBody,
+    });
+
+    console.log(`[force-weekly-email] Email sent to: ${recipientEmail}`);
+    return res.json({ success: true, message: `Email sent to ${recipientEmail}` });
+  } catch (err) {
+    console.error('Error in force-weekly-email:', err);
+    return res.status(500).json({ error: 'Failed to send email' });
   }
 });
 

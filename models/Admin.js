@@ -44,19 +44,21 @@ const competitorResultSchema = new mongoose.Schema({
 // ***** IMPORTANT: Make competitorResults an array-of-arrays of competitorResultSchema *****
 const adminSchema = new mongoose.Schema(
   {
+    // NEW FIELD: Name
+    name: { type: String, required: false },  // You can set required: true if you want it mandatory
+
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-
-    // Each time you run the /run endpoint, it will create
-    // a *new array* of competitorResults and push it to this outer array.
-    // competitorResults: [competitorResultSchema],
 
     competitorResults: {
       type: [[competitorResultSchema]],
       default: [],
     },
-    // NEW FIELD:
     notificationEmail: { type: String, default: '' },
+
+    // For "forgot password" OTP storage
+    resetOTP: { type: String, default: '' },
+    resetOTPExpiry: { type: Date, default: null },
   },
   { timestamps: true }
 );

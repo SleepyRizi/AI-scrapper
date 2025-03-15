@@ -34,4 +34,4 @@ const competitorSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model('Competitor', competitorSchema);
+export default mongoose.model('Cmpetitor', competitorSchema);
